@@ -80,6 +80,33 @@ int add_select_field(Command_t *cmd, const char *argument) {
     return 1;
 }
 
+int add_where_field(Command_t *cmd, const char *arg, const char *cmp_type, const char *value) {
+    size_t fields_len = cmd->cmd_args.whe_args.fields_len;
+    char ***buf = (char***)malloc(sizeof(char**) * (fields_len+1));
+    if (buf == NULL) {
+        return 0;
+    }
+
+    if (cmd->cmd_args.whe_args.fields) {
+        memcpy(buf, cmd->cmd_args.whe_args.fields, sizeof(char*) * fields_len);
+        free(cmd->cmd_args.whe_args.fields);
+    }
+
+    cmd->cmd_args.whe_args.fields = buf;
+    char **buf2 = (char**)malloc(sizeof(char*) * (fields_len+1));
+    if (buf == NULL) {
+        return 0;
+    }
+    buf2[0] = arg;
+    buf2[1] = cmp_type;
+    buf2[2] = value;
+
+    cmd->cmd_args.whe_args.fields[fields_len] = buf2;
+    cmd->cmd_args.whe_args.fields_len++;
+    return 1;
+}
+
+
 ///
 /// Free the allocated arguments, but without free the argument buffer
 ///

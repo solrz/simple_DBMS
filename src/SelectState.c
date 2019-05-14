@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "Command.h"
 #include "SelectState.h"
-
+#define not !
 void field_state_handler(Command_t *cmd, size_t arg_idx) {
     cmd->cmd_args.sel_args.fields = NULL;
     cmd->cmd_args.sel_args.fields_len = 0;
@@ -48,6 +48,31 @@ void table_state_handler(Command_t *cmd, size_t arg_idx) {
         }
     }
     cmd->type = UNRECOG_CMD;
+    return;
+}
+
+void where_state_handler(Command_t *cmd, size_t arg_idx) {
+    cmd->cmd_args.whe_args.fields = NULL;
+    cmd->cmd_args.whe_args.fields_len = 0;
+    while (arg_idx < cmd->args_len){
+        if(!strncmp(cmd->args[arg_idx], "where", 5)) {
+            arg_idx++;
+            break;
+        }
+    }
+    char identifible_compare_sign[4] = {'=','!','<','>'};
+    while (arg_idx < cmd->args_len){
+        if (not cmd->args[arg_idx])
+            continue;
+        for (int i = 0; i < 4; ++i) {
+            if(cmd->args[arg_idx][0] == identifible_compare_sign[i]) {
+                add_where_field(cmd,
+                        cmd->args[arg_idx-1],
+                        cmd->args[arg_idx],
+                        cmd->args[arg_idx+1]);
+            }
+        }
+    }
     return;
 }
 
