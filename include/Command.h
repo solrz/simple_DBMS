@@ -27,8 +27,14 @@ typedef struct SelectArgs {
     int limit;
 } SelectArgs_t;
 
+typedef struct WhereArgs {
+    char ***fields;
+    size_t fields_len;
+} WhereArgs_t;
+
 typedef union {
     SelectArgs_t sel_args;
+    WhereArgs_t whe_args;
 } CmdArg_t;
 
 typedef struct Command {
