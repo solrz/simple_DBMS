@@ -9,6 +9,8 @@ CMD_t cmd_list[] = {
     { ".help", 5, BUILT_IN_CMD },
     { "insert", 6, QUERY_CMD },
     { "select", 6, QUERY_CMD },
+    { "select", 6, QUERY_CMD },
+    { "delete", 6, QUERY_CMD },
     { "", 0, UNRECOG_CMD },
 };
 
@@ -77,32 +79,6 @@ int add_select_field(Command_t *cmd, const char *argument) {
     cmd->cmd_args.sel_args.fields = buf;
     cmd->cmd_args.sel_args.fields[fields_len] = strdup(argument);
     cmd->cmd_args.sel_args.fields_len++;
-    return 1;
-}
-
-int add_where_field(Command_t *cmd, const char *arg, const char *cmp_type, const char *value) {
-    size_t fields_len = cmd->cmd_args.whe_args.fields_len;
-    char ***buf = (char***)malloc(sizeof(char**) * (fields_len+1));
-    if (buf == NULL) {
-        return 0;
-    }
-
-    if (cmd->cmd_args.whe_args.fields) {
-        memcpy(buf, cmd->cmd_args.whe_args.fields, sizeof(char*) * fields_len);
-        free(cmd->cmd_args.whe_args.fields);
-    }
-
-    cmd->cmd_args.whe_args.fields = buf;
-    char **buf2 = (char**)malloc(sizeof(char*) * (fields_len+1));
-    if (buf == NULL) {
-        return 0;
-    }
-    buf2[0] = arg;
-    buf2[1] = cmp_type;
-    buf2[2] = value;
-
-    cmd->cmd_args.whe_args.fields[fields_len] = buf2;
-    cmd->cmd_args.whe_args.fields_len++;
     return 1;
 }
 

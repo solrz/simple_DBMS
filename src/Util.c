@@ -69,10 +69,23 @@ void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd
     int offset = cmd->cmd_args.sel_args.offset;
 
     if (offset == -1) offset = 0;
+    // find set clause
+    size_t where_clause_start;
+    for (size_t i = 0; i < cmd->args_len; ++i) {
+        char* current_arg = cmd->args[i];
+        if(current_arg){
+            if(!strncmp(current_arg,"where",5)){
+                where_clause_start = i;
+                break;
+            }
+        }
+    }
+
+
     WhereArgs_t conditions[100];
     size_t conditions_len = 0;
     bool consitions_isand = false;
-    for (size_t i = 0; i < cmd->args_len; ++i) {
+    for (size_t i = where_clause_start; i < cmd->args_len; ++i) {
         char* current_arg = cmd->args[i];
         if(current_arg){
             if(current_arg[0] == '=' or current_arg[0] == '>'
@@ -219,11 +232,47 @@ int handle_query_cmd(Table_t *table, Command_t *cmd) {
     } else if (!strncmp(cmd->args[0], "select", 6)) {
         handle_select_cmd(table, cmd);
         return SELECT_CMD;
+    } else if (!strncmp(cmd->args[0], "update", 6)) {
+        handle_select_cmd(table, cmd);
+        return SELECT_CMD;
+    } else if (!strncmp(cmd->args[0], "delete", 6)) {
+        handle_select_cmd(table, cmd);
+        return SELECT_CMD;
     } else {
         return UNRECOG_CMD;
     }
 }
 
+void handle_update_cmd(Table_t *table, Command_t *cmd) {
+    // find set clause
+    size_t set_clause_start;
+    for (size_t i = 0; i < cmd->args_len; ++i) {
+        char* current_arg = cmd->args[i];
+        if(current_arg){
+            if(!strncmp(current_arg,"set",3)){
+                set_clause_start = i;
+                break;
+            }
+        }
+    }
+
+    // find field to update
+    WhereArgs_t updates[100];
+    size_t updates_len = 0;
+    for (size_t i = set_clause_start; i < cmd->args_len; ++i) {
+        char* current_arg = cmd->args[i];
+        if(current_arg){
+            if(current_arg[0] == '='){
+                updates[updates_len].arg = cmd->args[i-1];
+                updates[updates_len].cmp_type = cmd->args[i];
+                updates[updates_len++].value = cmd->args[i+1];
+            } else if (!strncmp(current_arg,"where",5)){
+                break;
+            }
+        }
+    }
+
+}
 ///
 /// The return value is the number of rows insert into table
 /// If the insert operation success, then change the input arg
