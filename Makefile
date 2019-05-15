@@ -37,3 +37,5 @@ $(TEST): $(TEST_SRC) $(DEP_SRC) $(DEPS) $(TEST_UTIL) $(TEST_UTIL_INCLUE)
 clean:
 	-rm $(TARGET) $(OBJ) $(TEST) $(wildcard test/*.db)
 	rm -rf test/system/output/*
+run: shell
+	./shell

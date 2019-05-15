@@ -28,7 +28,9 @@ typedef struct SelectArgs {
 } SelectArgs_t;
 
 typedef struct WhereArgs {
-    char ***fields;
+    char *arg;
+    char *cmp_type;
+    char *value;
     size_t fields_len;
 } WhereArgs_t;
 

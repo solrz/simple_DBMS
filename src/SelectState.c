@@ -3,25 +3,28 @@
 #include "Command.h"
 #include "SelectState.h"
 #define not !
+#define or ||
 void field_state_handler(Command_t *cmd, size_t arg_idx) {
     cmd->cmd_args.sel_args.fields = NULL;
     cmd->cmd_args.sel_args.fields_len = 0;
     cmd->cmd_args.sel_args.limit = -1;
     cmd->cmd_args.sel_args.offset = -1;
     while(arg_idx < cmd->args_len) {
-        if (!strncmp(cmd->args[arg_idx], "*", 1)) {
+        if (!strncmp(cmd->args[arg_idx], "*", 1)or
+            !strncmp(cmd->args[arg_idx], "id", 2) or
+            !strncmp(cmd->args[arg_idx], "name", 4) or
+            !strncmp(cmd->args[arg_idx], "email", 5) or
+            !strncmp(cmd->args[arg_idx], "age", 3)) {
+
             add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "id", 2)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "name", 4)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "email", 5)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "age", 3)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
+
         } else if (!strncmp(cmd->args[arg_idx], "from", 4)) {
             table_state_handler(cmd, arg_idx+1);
             return;
+        } else if (!strncmp(cmd->args[arg_idx], "avg(", 4) or
+            !strncmp(cmd->args[arg_idx], "sum(", 4) or
+            !strncmp(cmd->args[arg_idx], "count(", 6)) {
+                add_select_field(cmd, cmd->args[arg_idx]);
         } else {
             cmd->type = UNRECOG_CMD;
             return;
@@ -51,30 +54,7 @@ void table_state_handler(Command_t *cmd, size_t arg_idx) {
     return;
 }
 
-void where_state_handler(Command_t *cmd, size_t arg_idx) {
-    cmd->cmd_args.whe_args.fields = NULL;
-    cmd->cmd_args.whe_args.fields_len = 0;
-    while (arg_idx < cmd->args_len){
-        if(!strncmp(cmd->args[arg_idx], "where", 5)) {
-            arg_idx++;
-            break;
-        }
-    }
-    char identifible_compare_sign[4] = {'=','!','<','>'};
-    while (arg_idx < cmd->args_len){
-        if (not cmd->args[arg_idx])
-            continue;
-        for (int i = 0; i < 4; ++i) {
-            if(cmd->args[arg_idx][0] == identifible_compare_sign[i]) {
-                add_where_field(cmd,
-                        cmd->args[arg_idx-1],
-                        cmd->args[arg_idx],
-                        cmd->args[arg_idx+1]);
-            }
-        }
-    }
-    return;
-}
+
 
 void offset_state_handler(Command_t *cmd, size_t arg_idx) {
     if (arg_idx < cmd->args_len) {
