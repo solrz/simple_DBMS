@@ -161,3 +161,14 @@ error:
     return NULL;
 }
 
+int remove_User(Table_t *table, size_t idx) {
+    for (size_t i = idx; i < table->len-1; ++i) {
+        User_t *user_replaceby;
+        User_t *user_replaced;
+        user_replaced = (table->users)+i;
+        user_replaceby = get_User(table, i+1);
+        memcpy(user_replaced, user_replaceby, sizeof(User_t));
+    }
+    table->len--;
+}
+

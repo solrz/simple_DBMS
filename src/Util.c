@@ -14,6 +14,7 @@
 #define bool int
 #define true 1
 #define false 0
+#define debug_state(str,v) printf("%s:%d\n",str,v)
 #define debugstr(str) printf("%s", str)
 #define debugstrn(str) printf("%s\n", str)
 #define debug(v) printf("%d\n", v)
@@ -145,8 +146,8 @@ void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd
                 }else if(!strncmp(cmp_condition.cmp_type, "!=",2)) {
                     fit = strcmp(cmp_condition.value, buf_str);
                 }
-                //debugstr(cmp_condition.value);
-                //debugstr(buf_str);
+                ////debugstr(cmp_condition.value);
+                ////debugstr(buf_str);
             }
             if(!fit and consitions_isand) break;
             if(fit and !consitions_isand) break;
@@ -258,10 +259,10 @@ int handle_update_cmd(Table_t *table, Command_t *cmd) {
             }
         }
     }
-    debugstr("set@");
-    debug(set_clause_start);
-    debugstr("where@");
-    debug(where_clause_start);
+    //debugstr("set@");
+    //debug(set_clause_start);
+    //debugstr("where@");
+    //debug(where_clause_start);
 
     // find field to update
     WhereArgs_t update;
@@ -335,8 +336,8 @@ int handle_update_cmd(Table_t *table, Command_t *cmd) {
                 }else if(!strncmp(cmp_condition.cmp_type, "!=",2)) {
                     fit = strcmp(cmp_condition.value, buf_str);
                 }
-                //debugstr(cmp_condition.value);
-                //debugstr(buf_str);
+                ////debugstr(cmp_condition.value);
+                ////debugstr(buf_str);
             }
             if(!fit and consitions_isand) break;
             if(fit and !consitions_isand) break;
@@ -358,6 +359,107 @@ int handle_update_cmd(Table_t *table, Command_t *cmd) {
             strncpy(user->email, update.value, MAX_USER_EMAIL);
         } else if(!strncmp(update.arg,"name",4)){
             strncpy(user->email, update.value, MAX_USER_NAME);        }
+    }
+}
+int handle_delete_cmd(Table_t *table, Command_t *cmd) {
+    // find where clause
+    size_t where_clause_start=-1;
+    for (size_t i = 0; i < cmd->args_len; ++i) {
+        char* current_arg = cmd->args[i];
+        if(current_arg){
+            if(!strncmp(current_arg,"where",5)){
+                where_clause_start = i;
+            }
+        }
+    }
+    //debugstr("where@");
+    //debug(where_clause_start);
+
+    // find field to update
+
+
+    // find field to fit
+    WhereArgs_t conditions[100];
+    size_t conditions_len = 0;
+    bool consitions_isand = false;
+    for (size_t i = where_clause_start; i < cmd->args_len; ++i) {
+        char* current_arg = cmd->args[i];
+        if(current_arg){
+            if(current_arg[0] == '=' or current_arg[0] == '>'
+               or current_arg[0] == '<' or current_arg[0] == '!'){
+                conditions[conditions_len].arg = cmd->args[i-1];
+                conditions[conditions_len].cmp_type = cmd->args[i];
+                conditions[conditions_len++].value = cmd->args[i+1];
+            }
+            if(!strncmp(current_arg,"and",3)){
+                consitions_isand = true;
+            }
+        }
+    }
+
+    // find user fitting
+    int idxListRemap[table->len];
+    int idxListRemap_len = 0;
+    for (size_t i = 0; i < table->len; ++i) {
+        User_t *user = get_User(table, i);
+        bool fit = true;
+        for (int j = 0; j < conditions_len; ++j) {
+            float buf_num;
+            char *buf_str;
+            bool buf_isnum = false;
+            WhereArgs_t cmp_condition = conditions[j];
+            if(!strncmp(cmp_condition.arg, "id",2)) {
+                buf_num = user->id;
+                buf_isnum = true;
+            } else if(!strncmp(cmp_condition.arg, "age",3)) {
+                buf_num = user->age;
+                buf_isnum = true;
+            } else if(!strncmp(cmp_condition.arg, "email",1)) {
+                buf_str = user->email;
+            } else if(!strncmp(cmp_condition.arg, "name",4)) {
+                buf_str = user->name;
+            }
+
+
+
+            if(buf_isnum){
+                if(!strncmp(cmp_condition.cmp_type, "=",1)){
+                    fit = buf_num == atoi(cmp_condition.value);
+                }else if(!strncmp(cmp_condition.cmp_type, "!=",2)){
+                    fit = buf_num != atoi(cmp_condition.value);
+                }else if(!strncmp(cmp_condition.cmp_type, ">=",2)){
+                    fit = buf_num >= atoi(cmp_condition.value);
+                }else if(!strncmp(cmp_condition.cmp_type, "<=",2)){
+                    fit = buf_num <= atoi(cmp_condition.value);
+                }else if(!strncmp(cmp_condition.cmp_type, ">",1)){
+                    fit = buf_num >  atoi(cmp_condition.value);
+                }else if(!strncmp(cmp_condition.cmp_type, "<",1)){
+                    fit = buf_num <  atoi(cmp_condition.value);
+                }
+            } else {
+                if(!strncmp(cmp_condition.cmp_type, "=",1)){
+                    fit = !strcmp(cmp_condition.value, buf_str);
+                }else if(!strncmp(cmp_condition.cmp_type, "!=",2)) {
+                    fit = strcmp(cmp_condition.value, buf_str);
+                }
+                ////debugstr(cmp_condition.value);
+                ////debugstr(buf_str);
+            }
+            if(!fit and consitions_isand) break;
+            if(fit and !consitions_isand) break;
+        }
+        if(!fit) continue;
+        idxListRemap[idxListRemap_len++] = i;
+    }
+
+    // do update
+    User_t* user;
+    int i = idxListRemap_len-1;
+    while(i >= 0){
+        //debug_state("index",i);
+        user = get_User(table, idxListRemap[i]);
+        //debug_state("id",user->id);
+        remove_User(table,idxListRemap[i--]);
     }
 }
 ///
@@ -472,8 +574,8 @@ int print_aggre(Table_t *table, Command_t *cmd) {
                 }else if(!strncmp(cmp_condition.cmp_type, "!=",2)) {
                     fit = strcmp(cmp_condition.value, buf_str);
                 }
-                //debugstr(cmp_condition.value);
-                //debugstr(buf_str);
+                ////debugstr(cmp_condition.value);
+                ////debugstr(buf_str);
             }
             if(!fit and consitions_isand) break;
             if(fit and !consitions_isand) break;
@@ -488,10 +590,10 @@ int print_aggre(Table_t *table, Command_t *cmd) {
         }else if (aggre_type==3){
             aggre_value = aggre_value + 1.0;
         }
-        //debug(user->age);
-        //debugstr("\n");
-        //debug(aggre_value);
-        //debugstr("\n");
+        ////debug(user->age);
+        ////debugstr("\n");
+        ////debug(aggre_value);
+        ////debugstr("\n");
     }
     if(aggre_type==1){
         aggre_value = aggre_value / idxListRemap_len;
