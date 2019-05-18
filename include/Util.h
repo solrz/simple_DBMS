@@ -17,5 +17,7 @@ int handle_query_cmd(Table_t *table, Command_t *cmd);
 int handle_insert_cmd(Table_t *table, Command_t *cmd);
 int handle_select_cmd(Table_t *table, Command_t *cmd);
 void print_help_msg();
+void handle_update_cmd(Table_t *table, Command_t *cmd);
+int print_aggre(Table_t *table, Command_t *cmd);
 
 #endif

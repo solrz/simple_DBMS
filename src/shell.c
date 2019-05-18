@@ -5,6 +5,8 @@
 #include "Util.h"
 #include "Table.h"
 
+#define debugstr(str) printf("%s", str)
+#define debug(v) printf("%f", v)
 
 int main(int argc, char **argv) {
     InputBuffer_t *input_buffer = new_InputBuffer();

@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "InputBuffer.h"
-
+#define debugstr(str) printf("%s", str)
+#define debug(v) printf("%f", v)
 ///
 /// Allocate InputBuffer_t and initialize some attributes
 /// Return: ptr of InputBuffer_t
