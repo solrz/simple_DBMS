@@ -9,6 +9,11 @@
 #include "Command.h"
 #include "Table.h"
 #include "SelectState.h"
+#define not !
+#define or ||
+#define debugstr(str) printf("%s", str)
+#define debugstrs(str) printf("Util/ %s\n", str)
+#define debug(v) printf("%f", v)
 
 ///
 /// Allocate State_t and initialize some attributes
@@ -24,6 +29,7 @@ State_t* new_State() {
 /// Print shell prompt
 ///
 void print_prompt(State_t *state) {
+    debugstrs("print_prompt");
     if (state->saved_stdout == -1) {
         printf("db > ");
     }
@@ -33,6 +39,7 @@ void print_prompt(State_t *state) {
 /// Print the user in the specific format
 ///
 void print_user(User_t *user, SelectArgs_t *sel_args) {
+    debugstrs("print_user");
     size_t idx;
     printf("(");
     for (idx = 0; idx < sel_args->fields_len; idx++) {
@@ -55,10 +62,31 @@ void print_user(User_t *user, SelectArgs_t *sel_args) {
     printf(")\n");
 }
 
+void print_like(Like_t *like, SelectArgs_t *sel_args) {
+    debugstrs("print_like");
+    size_t idx;
+    printf("(");
+    for (idx = 0; idx < sel_args->fields_len; idx++) {
+        if (!strncmp(sel_args->fields[idx], "*", 1)) {
+            printf("%d, %d", like->id1, like->id2);
+        } else {
+            if (idx > 0) printf(", ");
+
+            if (!strncmp(sel_args->fields[idx], "id1", 3)) {
+                printf("%d", like->id1);
+            } else if (!strncmp(sel_args->fields[idx], "id2", 3)) {
+                printf("%d", like->id2);
+            }
+        }
+    }
+    printf(")\n");
+}
+
 ///
 /// Print the users for given offset and limit restriction
 ///
 void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd) {
+    debugstrs("print_users");
     size_t idx;
     int limit = cmd->cmd_args.sel_args.limit;
     int offset = cmd->cmd_args.sel_args.offset;
@@ -66,7 +94,7 @@ void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd
     if (offset == -1) {
         offset = 0;
     }
-
+    debug(table->len);
     if (idxList) {
         for (idx = offset; idx < idxListLen; idx++) {
             if (limit != -1 && (idx - offset) >= limit) {
@@ -84,11 +112,39 @@ void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd
     }
 }
 
+void print_likes(Table_like_t *table_like, int *idxList, size_t idxListLen, Command_t *cmd) {
+    debugstrs("print_likes");
+    size_t idx;
+    int limit = cmd->cmd_args.sel_args.limit;
+    int offset = cmd->cmd_args.sel_args.offset;
+
+    if (offset == -1) {
+        offset = 0;
+    }
+
+    if (idxList) {
+        for (idx = offset; idx < idxListLen; idx++) {
+            if (limit != -1 && (idx - offset) >= limit) {
+                break;
+            }
+            print_like(get_Like(table_like, idxList[idx]), &(cmd->cmd_args.sel_args));
+        }
+    } else {
+        for (idx = offset; idx < table_like->len; idx++) {
+            if (limit != -1 && (idx - offset) >= limit) {
+                break;
+            }
+            print_like(get_Like(table_like, idx), &(cmd->cmd_args.sel_args));
+        }
+    }
+}
+
 ///
 /// This function received an output argument
 /// Return: category of the command
 ///
 int parse_input(char *input, Command_t *cmd) {
+    debugstrs("parse_input");
     char *token;
     int idx;
     token = strtok(input, " ,\n");
@@ -109,6 +165,7 @@ int parse_input(char *input, Command_t *cmd) {
 /// Return: command type
 ///
 void handle_builtin_cmd(Table_t *table, Command_t *cmd, State_t *state) {
+    debugstrs("handle_builtin_cmd");
     if (!strncmp(cmd->args[0], ".exit", 5)) {
         archive_table(table);
         exit(0);
@@ -140,28 +197,29 @@ void handle_builtin_cmd(Table_t *table, Command_t *cmd, State_t *state) {
 /// Handle query type commands
 /// Return: command type
 ///
-int handle_query_cmd(Table_t *table, Command_t *cmd) {
+///
+/// Handle query type commands
+/// Return: command type
+///
+int handle_user_query_cmd(Table_t *table_user, Command_t *cmd) {
+    debugstrs("handle_user_query_cmd");
     if (!strncmp(cmd->args[0], "insert", 6)) {
-        handle_insert_cmd(table, cmd);
+        handle_user_insert_cmd(table_user, cmd);
         return INSERT_CMD;
     } else if (!strncmp(cmd->args[0], "select", 6)) {
-        handle_select_cmd(table, cmd);
+        handle_user_select_cmd(table_user, cmd);
         return SELECT_CMD;
     } else {
         return UNRECOG_CMD;
     }
 }
 
-///
-/// The return value is the number of rows insert into table
-/// If the insert operation success, then change the input arg
-/// `cmd->type` to INSERT_CMD
-///
-int handle_insert_cmd(Table_t *table, Command_t *cmd) {
+int handle_user_insert_cmd(Table_t *table_user, Command_t *cmd) {
+    debugstrs("handle_user_insert_cmd");
     int ret = 0;
     User_t *user = command_to_User(cmd);
     if (user) {
-        ret = add_User(table, user);
+        ret = add_User(table_user, user);
         if (ret > 0) {
             cmd->type = INSERT_CMD;
         }
@@ -169,18 +227,57 @@ int handle_insert_cmd(Table_t *table, Command_t *cmd) {
     return ret;
 }
 
-///
-/// The return value is the number of rows select from table
-/// If the select operation success, then change the input arg
-/// `cmd->type` to SELECT_CMD
-///
-int handle_select_cmd(Table_t *table, Command_t *cmd) {
+int handle_user_select_cmd(Table_t *table_user, Command_t *cmd) {
+    debugstrs("handle_user_select_cmd");
     cmd->type = SELECT_CMD;
-    field_state_handler(cmd, 1);
+    user_field_state_handler(cmd, 1);
 
-    print_users(table, NULL, 0, cmd);
-    return table->len;
+    print_users(table_user, NULL, 0, cmd);
+    return table_user->len;
 }
+
+///
+/// Handle query type commands
+/// Return: command type
+///
+int handle_like_query_cmd(Table_like_t *table_like, Command_t *cmd) {
+    debugstrs("handle_like_query_cmd");
+    if (!strncmp(cmd->args[0], "insert", 6)) {
+        handle_like_insert_cmd(table_like, cmd);
+        return INSERT_CMD;
+    } else if (!strncmp(cmd->args[0], "select", 6)) {
+        handle_like_select_cmd(table_like, cmd);
+        return SELECT_CMD;
+    } else {
+        return UNRECOG_CMD;
+    }
+}
+
+int handle_like_insert_cmd(Table_like_t *table_like, Command_t *cmd) {
+    debugstrs("handle_like_insert_cmd");
+    int ret = 0;
+    Like_t *like = command_to_Like(cmd);
+    if (like) {
+        ret = add_Like(table_like, like);
+        if (ret > 0) {
+            cmd->type = INSERT_CMD;
+        }
+    }
+    return ret;
+}
+
+int handle_like_select_cmd(Table_like_t *table_like, Command_t *cmd) {
+    debugstrs("handle_like_select_cmd");
+    debugstr("QC1");
+    cmd->type = SELECT_CMD;
+    like_field_state_handler(cmd, 1);
+
+    debugstr("QC2");
+    print_likes(table_like, NULL, 0, cmd);
+    return table_like->len;
+}
+
+
 
 ///
 /// Show the help messages

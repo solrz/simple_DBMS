@@ -1,6 +1,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Command.h"
+#define not !
+#define or ||
+#define debugstr(str) printf("%s", str)
+#define debugstrs(str) printf("%s\n", str)
+#define debug(v) printf("%f", v)
 
 CMD_t cmd_list[] = {
     { ".exit", 5, BUILT_IN_CMD },
@@ -65,6 +70,7 @@ error:
 /// Add select fields
 ///
 int add_select_field(Command_t *cmd, const char *argument) {
+    debugstrs("add_select_field");
     size_t fields_len = cmd->cmd_args.sel_args.fields_len;
     char **buf = (char**)malloc(sizeof(char*) * (fields_len+1));
     if (buf == NULL) {

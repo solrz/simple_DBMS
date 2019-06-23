@@ -16,6 +16,15 @@ typedef struct Table {
     char *file_name;
 } Table_t;
 
+typedef struct Table_like {
+    size_t capacity;
+    size_t len;
+    Like_t *likes;
+    unsigned char *cache_map;
+    FILE *fp;
+    char *file_name;
+} Table_like_t;
+
 Table_t *new_Table(char *file_name);
 int add_User(Table_t *table, User_t *user);
 int archive_table(Table_t *table);
